@@ -8,12 +8,8 @@
 
 using namespace std;
 
-#define TRUE 1
-#define FALSE 0
-#define CHAIRS 3 //Sillas Disponibles
-#define CANT_CUST 5 //Cantidad de Clientes
-#define T_CUST 0 //Tiempo de llegada de Clientes
-#define T_CORTE 3 //Tiempo de corte de pelo
+#define SILLAS 3 //Sillas Disponibles
+int tiempoCorte = 0;//Tiempo de corte de pelo
 
 typedef int semaphore;
 
@@ -23,61 +19,58 @@ void *barber (void *);
 void up (semaphore *);
 void down (semaphore *);
 
-semaphore sem_barber=0, sem_customer=0,sem_mutex=1;
-int waiting=0;
+semaphore semaforoBarbero=0; //Semaforo para identificar si el barbero esta dormido
+semaphore semaforoCliente=0; //Semaforo para el conteo de cliente
+semaphore semaforoSilla=1; //Semafora para la exclusión mutua de la silla
+
+int esperando=0; //Numeros de clientes esperando
 
 //Main function
 int main (void) {
-    pthread_t barb_t,cust_t[CANT_CUST];
-    int i;
-    int exit = 0;
+    pthread_t barb_t;
+    pthread_create(&barb_t,NULL,barber,NULL);
     while(!GetAsyncKeyState(VK_ESCAPE)){
-        cout<<"prueba"<<endl;
+        pthread_t new cust_t;
+        pthread_create(&cust_t,NULL,customer,NULL);
     }
-    // pthread_create(&barb_t,NULL,barber,NULL);
-    // for (i=0;i<CANT_CUST;i++){
-    //     sleep(T_CUST);
-    //     pthread_create(&cust_t[i],NULL,customer,NULL);
-    // }
-    // pthread_join(barb_t,NULL);
+    pthread_join(barb_t,NULL);
     return(0);
 }
 
 void *customer (void *n) {
-printf ("Customer:entrando hay %d esperando\n",waiting);
-down (&sem_mutex);
-if (waiting < CHAIRS) {
-waiting++;
-up (&sem_customer);
-up (&sem_mutex);
-down (&sem_barber);
-printf ("Customer:Me estan cortando el pelo.\n");
-}
-else {
-up (&sem_mutex);
-printf ("Customer:Me fui no hay lugar.\n");
-} 
+    printf ("Customer:entrando hay %d esperando\n",waiting);
+    down (&semaforoSilla);
+    if (waiting < SILLAS) {
+        waiting++;
+        up (&semaforoCliente);
+        up (&semaforoSilla);
+        down (&semaforoBarbero);
+        printf ("Customer:Me estan cortando el pelo.\n");
+    }
+    else {
+        up (&semaforoSilla);
+        printf ("Customer:Me fui no hay lugar.\n");
+    } 
 }
 
 void *barber (void *j) {
-printf ("Barber:Empiezo a trabajar\n"); 
-while (TRUE) {
-down (&sem_customer);
-down (&sem_mutex);
-waiting--;
-up (&sem_barber);
-up (&sem_mutex);
-printf ("Barber:Comienzo el corte de pelo de un cliente quedan %d esperando.\n",waiting);
-sleep (T_CORTE);
-printf ("Barber:Termine de cortar el pelo de un cliente quedan %d esperando.\n",waiting);
-}
+    printf ("Barber:Empiezo a trabajar\n"); 
+    while (TRUE) {
+        down (&semaforoCliente);
+        down (&semaforoSilla);
+        up (&semaforoBarbero);
+        up (&semaforoSilla);
+        printf ("Barber:Comienzo el corte de pelo de un cliente quedan %d esperando.\n",waiting);
+        sleep (tiempoCorte);
+        printf ("Barber:Termine de cortar el pelo de un cliente quedan %d esperando.\n",waiting);
+    }
 }
 
 void up (semaphore *sem) {
-*sem+=1;
+    *sem+=1;
 }
 
 void down (semaphore *sem) {
-while (*sem<=0){};
-*sem-=1;
+    while (*sem<=0){};
+    *sem-=1;
 } 
