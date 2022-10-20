@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <conio.h>
 #include <pthread.h>
+#include <windows.h>
+#include <winuser.h>
 
 using namespace std;
 
@@ -29,17 +31,15 @@ int main (void) {
     pthread_t barb_t,cust_t[CANT_CUST];
     int i;
     int exit = 0;
-    while(exit != 27){
+    while(!GetAsyncKeyState(VK_ESCAPE)){
         cout<<"prueba"<<endl;
-        exit = getch();
     }
-
     // pthread_create(&barb_t,NULL,barber,NULL);
     // for (i=0;i<CANT_CUST;i++){
     //     sleep(T_CUST);
     //     pthread_create(&cust_t[i],NULL,customer,NULL);
     // }
-    pthread_join(barb_t,NULL);
+    // pthread_join(barb_t,NULL);
     return(0);
 }
 
