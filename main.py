@@ -6,8 +6,9 @@ import random
 import queue
 
 SILLAS = 3
-ESPERAS = 1
+ESPERAS = 6
 sala_espera = queue.Queue(SILLAS)
+barbero_dormido = None
 
 #Simular el tiempo de llegada 
 def espera():
@@ -28,6 +29,12 @@ class Barbero(threading.Thread):
             except queue.Empty: #Si no existen clientes esperando por su corte 
                 if self.alto_completo.is_set(): #Se activa cuando ya no existen clientes por atender
                     return
+                else:
+                    with Barbero.condicion:
+                        print("El barbero esta dormido z.z.z.z.z.z")
+                        global barbero_dormido
+                        barbero_dormido = True
+                        Barbero.condicion.wait()
             else:
                 cliente_actual.cortar(self.ID)
 
@@ -58,8 +65,13 @@ class Cliente (threading.Thread):
             return
         #Si la sala no esta llena se siente y notifica al barbero
         print(f"El cliente {self.ID} se sentó en la sala de espera")
-        with Barbero.condicion:
-            Barbero.condicion.notify(1)
+        global barbero_dormido
+        if sala_espera.qsize() > 0 and barbero_dormido == True:
+            barbero_dormido = False
+            print(f"El barbero se desperto :'(")
+            with Barbero.condicion:
+                Barbero.condicion.notify(1)
+        
         
         self.atendido.wait() #Bloquea el proceso hasta ser atendido
 
