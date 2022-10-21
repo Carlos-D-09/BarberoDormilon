@@ -6,7 +6,7 @@ import random
 import queue
 
 SILLAS = 3
-ESPERAS = 6
+ESPERAS = 1
 sala_espera = queue.Queue(SILLAS)
 barbero_dormido = None
 
@@ -39,7 +39,7 @@ class Barbero(threading.Thread):
                 cliente_actual.cortar(self.ID)
 
 class Cliente (threading.Thread):
-    duracion_corte = random.randint(1,5)
+    duracion_corte = None
 
     def __init__(self, ID):
         super().__init__()
@@ -60,19 +60,18 @@ class Cliente (threading.Thread):
 
         try: #Revisar si existe espacio en la sala de espera
             sala_espera.put(self, block=False)
-        except queue.Full:  #Si esta llena el cliente se va ç
+        except queue.Full:  #Si esta llena el cliente se va
             print(f"La sala de espera esta llena, el cliente {self.ID} se fue...")
             return
         #Si la sala no esta llena se siente y notifica al barbero
         print(f"El cliente {self.ID} se sentó en la sala de espera")
+        
         global barbero_dormido
         if sala_espera.qsize() > 0 and barbero_dormido == True:
             barbero_dormido = False
             print(f"El barbero se desperto :'(")
             with Barbero.condicion:
                 Barbero.condicion.notify(1)
-        
-        
         self.atendido.wait() #Bloquea el proceso hasta ser atendido
 
     
